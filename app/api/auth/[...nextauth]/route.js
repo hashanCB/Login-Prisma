@@ -15,7 +15,7 @@ const handler = NextAuth({
   providers: [
     CredentialsProvider({
       // Example using a credentials provider
-      name: "Credentials",
+      name: "credentials",
       credentials: {
         username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
@@ -26,6 +26,7 @@ const handler = NextAuth({
             username: credentials.username,
           },
         });
+
         if (user && user.password === credentials.password) {
           // Authentication successful
           return user;
@@ -55,11 +56,9 @@ const handler = NextAuth({
     // Add other providers here
   ],
   // Add Rolse base
-  callbacks: {
-    session({ session, user }) {
-      //   session.user.email = "kminchelle@qq.com";
-      return session;
-    },
+
+  pages: {
+    signIn: "/singin", // Path to your custom sign-in page
   },
   // Additional NextAuth configuration...
 });
