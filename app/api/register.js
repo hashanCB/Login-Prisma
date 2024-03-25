@@ -1,8 +1,11 @@
 "use server";
 import { PrismaClient } from "@prisma/client";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 import React from "react";
 
 const Insertdata = async (data) => {
+  console.log("dd");
   try {
     const prisma = new PrismaClient();
     const respont = await prisma.regidter.create({
@@ -12,6 +15,13 @@ const Insertdata = async (data) => {
         password: data.password,
       },
     });
+    const bytes = await data.profileimage[0].arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const path = join("/", "tmp", data.profileimage[0].name);
+    await writeFile(path, buffer);
+    console.log(`open ${path} to see the uploaded file`);
+
     return { success: true };
   } catch (error) {
     console.log("you have Some error", error);

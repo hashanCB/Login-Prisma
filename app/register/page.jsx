@@ -23,8 +23,22 @@ const schema = yup.object().shape({
     .required("Password is required"),
   repassword: yup
     .string()
-    .oneOf([yup.ref("password"), null], "password must match")
-    .required("confim password is request"),
+    .oneOf([yup.ref("password"), null], "password must match"),
+  profileimage: yup
+    .mixed()
+    .test("fileRequired", "File is required", (value) => {
+      return value && value.length > 0;
+    })
+    .test("fileSize", "File size is too large", (value) => {
+      return value && value.length && value[0].size <= 1024 * 1024;
+    })
+    .test("fileType", "Unsupported file format", (value) => {
+      return (
+        value &&
+        value.length &&
+        ["image/jpeg", "image/png"].includes(value[0].type)
+      );
+    }),
 });
 
 const page = () => {
@@ -40,7 +54,7 @@ const page = () => {
   });
 
   const onsubmit = async (data) => {
-    console.log(data.username, data.email);
+    console.log(data.username, data.email, data.profileimage[0]);
     try {
       const respons = await Insertdata(data);
       if (respons.success) {
@@ -97,7 +111,9 @@ const page = () => {
           {...register("repassword")}
         />
         {errors.repassword?.message}
-
+        <label>Profile Image</label>
+        <input type="file" name="profileimage" {...register("profileimage")} />
+        {errors.profileimage?.message}
         <button
           type="submit"
           className="px-[10px]  rounded-md mx-3 bg-emerald-500 "
