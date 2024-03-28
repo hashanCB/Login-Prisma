@@ -5,22 +5,24 @@ import { join } from "path";
 import React from "react";
 
 const Insertdata = async (data) => {
-  console.log("dd");
+  console.log(data.get("file"));
+  console.log(data.get("username"));
   try {
     const prisma = new PrismaClient();
     const respont = await prisma.regidter.create({
       data: {
-        username: data.username,
-        email: data.email,
-        password: data.password,
+        username: data.get("username"),
+        email: data.get("email"),
+        password: data.get("password"),
       },
     });
-    const bytes = await data.profileimage[0].arrayBuffer();
+    const bytes = await data.get("file").arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const path = join("/", "tmp", data.profileimage[0].name);
+    const path = join(process.cwd(), "public", "tmp", data.get("file").name);
     await writeFile(path, buffer);
-    console.log(`open ${path} to see the uploaded file`);
+
+    console.log(`File uploaded successfully to ${path}`);
 
     return { success: true };
   } catch (error) {

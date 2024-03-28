@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Insertdata from "../api/register";
-
+import { FilePond, registerPlugin } from "react-filepond";
+import "filepond/dist/filepond.min.css";
 import * as yup from "yup";
 
 import { useRouter } from "next/navigation";
@@ -24,21 +25,21 @@ const schema = yup.object().shape({
   repassword: yup
     .string()
     .oneOf([yup.ref("password"), null], "password must match"),
-  profileimage: yup
-    .mixed()
-    .test("fileRequired", "File is required", (value) => {
-      return value && value.length > 0;
-    })
-    .test("fileSize", "File size is too large", (value) => {
-      return value && value.length && value[0].size <= 1024 * 1024;
-    })
-    .test("fileType", "Unsupported file format", (value) => {
-      return (
-        value &&
-        value.length &&
-        ["image/jpeg", "image/png"].includes(value[0].type)
-      );
-    }),
+  // profileimage: yup
+  //   .mixed()
+  //   .test("fileRequired", "File is required", (value) => {
+  //     return value && value.length > 0;
+  //   })
+  //   .test("fileSize", "File size is too large", (value) => {
+  //     return value && value.length && value[0].size <= 1024 * 1024;
+  //   })
+  //   .test("fileType", "Unsupported file format", (value) => {
+  //     return (
+  //       value &&
+  //       value.length &&
+  //       ["image/jpeg", "image/png"].includes(value[0].type)
+  //     );
+  //   }),
 });
 
 const page = () => {
@@ -46,6 +47,7 @@ const page = () => {
   const router = useRouter(); // Use the useRouter hook here
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors },
     reset,
@@ -54,9 +56,14 @@ const page = () => {
   });
 
   const onsubmit = async (data) => {
-    console.log(data.username, data.email, data.profileimage[0]);
+    console.log(data);
     try {
-      const respons = await Insertdata(data);
+      const Formimage = new FormData();
+      Formimage.append("file", data.file[0]);
+      Formimage.append("username", data.username);
+      Formimage.append("email", data.email);
+      Formimage.append("password", data.password);
+      const respons = await Insertdata(Formimage);
       if (respons.success) {
         setError("");
         console.log("Succufull Regidter");
@@ -75,7 +82,7 @@ const page = () => {
     <div className=" max-w-max bg-orange-200 flex flex-col mx-auto mt-10">
       <form
         onSubmit={handleSubmit(onsubmit)}
-        className=" mb-5 flex flex-col  max-w-max  items-center justify-center mx-10 space-y-2"
+        className=" mb-5 flex flex-col w-[500px]  items-center justify-center mx-10 space-y-2"
       >
         <label>username</label>
         <input
@@ -85,7 +92,6 @@ const page = () => {
           {...register("username")}
         />
         {errors.username?.message}
-
         <label>Email</label>
         <input
           type="email"
@@ -94,7 +100,6 @@ const page = () => {
           {...register("email")}
         />
         {errors.email?.message}
-
         <label>password</label>
         <input
           type="password"
@@ -111,15 +116,30 @@ const page = () => {
           {...register("repassword")}
         />
         {errors.repassword?.message}
+
         <label>Profile Image</label>
-        <input type="file" name="profileimage" {...register("profileimage")} />
+        {/* <input type="file" id="profileimage" {...register("profileimage")} /> */}
+        <Controller
+          name="file"
+          control={control}
+          render={({ field }) => (
+            <FilePond
+              files={field.value}
+              onupdatefiles={(fileItems) => {
+                field.onChange(fileItems.map((fileItem) => fileItem.file));
+              }}
+            />
+          )}
+        />
+
         {errors.profileimage?.message}
-        <button
-          type="submit"
+        <br />
+        <input
           className="px-[10px]  rounded-md mx-3 bg-emerald-500 "
-        >
-          Register
-        </button>
+          type="submit"
+          value="Register"
+        />
+
         {error && <div>{error}</div>}
       </form>
     </div>
