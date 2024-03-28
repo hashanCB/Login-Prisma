@@ -2,7 +2,6 @@
 import { PrismaClient } from "@prisma/client";
 import { writeFile } from "fs/promises";
 import { join } from "path";
-import React from "react";
 
 const Insertdata = async (data) => {
   console.log(data.get("file"));
@@ -16,12 +15,11 @@ const Insertdata = async (data) => {
         password: data.get("password"),
       },
     });
+
     const bytes = await data.get("file").arrayBuffer();
     const buffer = Buffer.from(bytes);
-
     const path = join(process.cwd(), "public", "tmp", data.get("file").name);
     await writeFile(path, buffer);
-
     console.log(`File uploaded successfully to ${path}`);
 
     return { success: true };

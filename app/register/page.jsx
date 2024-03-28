@@ -6,8 +6,9 @@ import Insertdata from "../api/register";
 import { FilePond, registerPlugin } from "react-filepond";
 import "filepond/dist/filepond.min.css";
 import * as yup from "yup";
-
+import { useEdgeStore } from "../utils/edgestore";
 import { useRouter } from "next/navigation";
+import { SingleImageDropzone } from "../components/SingleImageDropzone";
 
 const schema = yup.object().shape({
   username: yup.string().required("Please Enter value here"),
@@ -45,6 +46,8 @@ const schema = yup.object().shape({
 const page = () => {
   const [error, setError] = useState("");
   const router = useRouter(); // Use the useRouter hook here
+  const { edgestore } = useEdgeStore();
+  const [file, setFile] = useState(null);
   const {
     register,
     control,
@@ -59,11 +62,25 @@ const page = () => {
     console.log(data);
     try {
       const Formimage = new FormData();
-      Formimage.append("file", data.file[0]);
+      Formimage.append("file", file);
       Formimage.append("username", data.username);
       Formimage.append("email", data.email);
       Formimage.append("password", data.password);
       const respons = await Insertdata(Formimage);
+      const fuiles = data.file;
+      console.log("balamko", file);
+      if (fuiles) {
+        const res = await edgestore.publicFiles.upload({
+          file,
+          onProgressChange: (progress) => {
+            // you can use this to show a progress bar
+            console.log(progress);
+          },
+        });
+        // you can run some server action or api here
+        // to add the necessary data to your database
+        console.log(res);
+      }
       if (respons.success) {
         setError("");
         console.log("Succufull Regidter");
@@ -123,10 +140,13 @@ const page = () => {
           name="file"
           control={control}
           render={({ field }) => (
-            <FilePond
-              files={field.value}
-              onupdatefiles={(fileItems) => {
-                field.onChange(fileItems.map((fileItem) => fileItem.file));
+            <SingleImageDropzone
+              width={200}
+              height={200}
+              value={file} // Pass the current file state
+              onChange={(newFile) => {
+                setFile(newFile);
+                field.onChange(newFile); // Update form state as well
               }}
             />
           )}

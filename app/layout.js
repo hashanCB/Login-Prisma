@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SessionProviders from "./SessionProvider";
+import { EdgeStoreProvider } from "./utils/edgestore";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,9 +13,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <SessionProviders>
-      <html lang="en">
-        <body className={inter.className}>{children}</body>
-      </html>
+      <EdgeStoreProvider>
+        <html lang="en">
+          <body className={inter.className}>{children}</body>
+        </html>
+      </EdgeStoreProvider>
     </SessionProviders>
   );
 }

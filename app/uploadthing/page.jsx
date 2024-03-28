@@ -1,36 +1,40 @@
 "use client";
+import * as React from "react";
+import { useEdgeStore } from "../utils/edgestore";
+import { SingleImageDropzone } from "../components/SingleImageDropzone";
 
-import { UploadButton } from "../utils/uploadthing";
-
-import { FilePond, registerPlugin } from "react-filepond";
-import "filepond/dist/filepond.min.css";
-import { useState } from "react";
-
-export default function Home() {
-  const [files, setFiles] = useState([]);
+export default function Page() {
+  const [file, setFile] = React.useState();
+  const { edgestore } = useEdgeStore();
   return (
-    <main className="flex min-h-screen flex-col ">
-      <FilePond
-        files={files}
-        allowMultiple={true}
-        maxFiles={3}
-        // server="/api"
-        credits={false}
-        onupdatefiles={setFiles}
-      />
-      {console.log(files)}
-      <UploadButton
-        endpoint="imageUploader"
-        onClientUploadComplete={(res) => {
-          // Do something with the response
-          console.log("Files: ", res);
-          alert("Upload Completed");
-        }}
-        onUploadError={(error) => {
-          // Do something with the error.
-          alert(`ERROR! ${error.message}`);
+    <div>
+      <SingleImageDropzone
+        width={200}
+        height={200}
+        value={file}
+        onChange={(file) => {
+          setFile(file);
         }}
       />
-    </main>
+      <button
+        onClick={async () => {
+          console.log(file);
+          if (file) {
+            const res = await edgestore.publicFiles.upload({
+              file,
+              onProgressChange: (progress) => {
+                // you can use this to show a progress bar
+                console.log(progress);
+              },
+            });
+            // you can run some server action or api here
+            // to add the necessary data to your database
+            console.log(res);
+          }
+        }}
+      >
+        Upload
+      </button>
+    </div>
   );
 }
