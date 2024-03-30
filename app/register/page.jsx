@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Insertdata from "../api/register";
@@ -14,8 +14,8 @@ const schema = yup.object().shape({
   username: yup.string().required("Please Enter value here"),
   email: yup
     .string()
-    .required("plase enter email")
-    .email("please enter valid email"),
+    .required("Please enter email")
+    .email("Please enter a valid email"),
   password: yup
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -25,29 +25,33 @@ const schema = yup.object().shape({
     .required("Password is required"),
   repassword: yup
     .string()
-    .oneOf([yup.ref("password"), null], "password must match"),
-  // profileimage: yup
-  //   .mixed()
-  //   .test("fileRequired", "File is required", (value) => {
-  //     return value && value.length > 0;
-  //   })
-  //   .test("fileSize", "File size is too large", (value) => {
-  //     return value && value.length && value[0].size <= 1024 * 1024;
-  //   })
-  //   .test("fileType", "Unsupported file format", (value) => {
-  //     return (
-  //       value &&
-  //       value.length &&
-  //       ["image/jpeg", "image/png"].includes(value[0].type)
-  //     );
-  //   }),
+    .oneOf([yup.ref("password"), null], "Password must match"),
 });
 
-const page = () => {
+const Page = () => {
   const [error, setError] = useState("");
   const router = useRouter(); // Use the useRouter hook here
   const { edgestore } = useEdgeStore();
   const [file, setFile] = useState(null);
+  const [urlToConfirm, setUrlToConfirm] = useState(null);
+  const [progress, setProgress] = useState();
+  const buttonRef = useRef(null);
+
+  const savefile = async () => {
+    try {
+      await edgestore.publicFiles.confirmUpload({
+        url: urlToConfirm,
+      });
+    } catch (error) {
+      console.log("Error confirming upload", error);
+    }
+  };
+  useEffect(() => {
+    if (urlToConfirm) {
+      savefile();
+    }
+  }, [urlToConfirm]);
+
   const {
     register,
     control,
@@ -58,53 +62,61 @@ const page = () => {
     resolver: yupResolver(schema),
   });
 
-  const onsubmit = async (data) => {
+  const onSubmit = async (data) => {
     console.log(data);
     try {
       const Formimage = new FormData();
+
+      if (data.file) {
+        const res = await edgestore.publicFiles.upload({
+          file,
+          options: {
+            temporary: true,
+          },
+          onProgressChange: (progress) => {
+            // You can use this to show a progress bar
+            console.log(progress);
+          },
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setProgress(res.url);
+        Formimage.append("url", res.url);
+      }
+
       Formimage.append("file", file);
       Formimage.append("username", data.username);
       Formimage.append("email", data.email);
       Formimage.append("password", data.password);
       const respons = await Insertdata(Formimage);
-      const fuiles = data.file;
-      console.log("balamko", file);
-      if (fuiles) {
-        const res = await edgestore.publicFiles.upload({
-          file,
-          onProgressChange: (progress) => {
-            // you can use this to show a progress bar
-            console.log(progress);
-          },
-        });
-        // you can run some server action or api here
-        // to add the necessary data to your database
-        console.log(res);
-      }
+
       if (respons.success) {
         setError("");
-        console.log("Succufull Regidter");
-        router.push("/");
+        setUrlToConfirm(Formimage.get("url"));
+        console.log("Successful Register");
+
+        // router.push("/");
       } else {
         setError(respons.message);
-        console.log("fail Regidter");
+        console.log("Fail Register");
       }
     } catch (error) {
-      console.log("server error", error);
+      console.log("Server error", error);
     }
 
     reset();
   };
+
   return (
-    <div className=" max-w-max bg-orange-200 flex flex-col mx-auto mt-10">
+    <div className="max-w-max bg-orange-200 flex flex-col mx-auto mt-10">
       <form
-        onSubmit={handleSubmit(onsubmit)}
-        className=" mb-5 flex flex-col w-[500px]  items-center justify-center mx-10 space-y-2"
+        onSubmit={handleSubmit(onSubmit)}
+        className="mb-5 flex flex-col w-[500px] items-center justify-center mx-10 space-y-2"
       >
-        <label>username</label>
+        <label>Username</label>
         <input
           type="text"
-          placeholder="username"
+          placeholder="Username"
           name="username"
           {...register("username")}
         />
@@ -112,30 +124,29 @@ const page = () => {
         <label>Email</label>
         <input
           type="email"
-          placeholder="email"
+          placeholder="Email"
           name="email"
           {...register("email")}
         />
         {errors.email?.message}
-        <label>password</label>
+        <label>Password</label>
         <input
           type="password"
-          placeholder="password"
+          placeholder="Password"
           name="password"
           {...register("password")}
         />
         {errors.password?.message}
-        <label>re-password</label>
+        <label>Re-password</label>
         <input
           type="password"
-          placeholder="re-password"
+          placeholder="Re-password"
           name="repassword"
           {...register("repassword")}
         />
         {errors.repassword?.message}
 
         <label>Profile Image</label>
-        {/* <input type="file" id="profileimage" {...register("profileimage")} /> */}
         <Controller
           name="file"
           control={control}
@@ -151,19 +162,31 @@ const page = () => {
             />
           )}
         />
-
-        {errors.profileimage?.message}
         <br />
         <input
-          className="px-[10px]  rounded-md mx-3 bg-emerald-500 "
+          className="px-[10px] rounded-md mx-3 bg-emerald-500"
           type="submit"
           value="Register"
         />
 
         {error && <div>{error}</div>}
       </form>
+
+      <button
+        ref={buttonRef}
+        className="bg-white text-black rounded px-3 py-1 hover:opacity-80"
+        onClick={async () => {
+          console.log(urlToConfirm);
+
+          await edgestore.publicFiles.confirmUpload({
+            url: urlToConfirm,
+          });
+        }}
+      >
+        Submit
+      </button>
     </div>
   );
 };
 
-export default page;
+export default Page;
