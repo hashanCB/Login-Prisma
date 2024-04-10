@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Insertdata from "../api/register";
-import { FilePond, registerPlugin } from "react-filepond";
+
 import "filepond/dist/filepond.min.css";
 import * as yup from "yup";
 import { useEdgeStore } from "../utils/edgestore";
@@ -34,8 +34,6 @@ const Page = () => {
   const { edgestore } = useEdgeStore();
   const [file, setFile] = useState(null);
   const [urlToConfirm, setUrlToConfirm] = useState(null);
-  const [progress, setProgress] = useState();
-  const buttonRef = useRef(null);
 
   const savefile = async () => {
     try {
@@ -56,7 +54,7 @@ const Page = () => {
     register,
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm({
     resolver: yupResolver(schema),
@@ -80,7 +78,7 @@ const Page = () => {
         });
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        setProgress(res.url);
+
         Formimage.append("url", res.url);
       }
 
@@ -156,6 +154,7 @@ const Page = () => {
               height={200}
               value={file} // Pass the current file state
               onChange={(newFile) => {
+                //custom onChange function
                 setFile(newFile);
                 field.onChange(newFile); // Update form state as well
               }}
@@ -166,25 +165,12 @@ const Page = () => {
         <input
           className="px-[10px] rounded-md mx-3 bg-emerald-500"
           type="submit"
-          value="Register"
+          value={isSubmitting ? "Submitting..." : "Submit"}
+          disabled={isSubmitting}
         />
 
         {error && <div>{error}</div>}
       </form>
-
-      <button
-        ref={buttonRef}
-        className="bg-white text-black rounded px-3 py-1 hover:opacity-80"
-        onClick={async () => {
-          console.log(urlToConfirm);
-
-          await edgestore.publicFiles.confirmUpload({
-            url: urlToConfirm,
-          });
-        }}
-      >
-        Submit
-      </button>
     </div>
   );
 };

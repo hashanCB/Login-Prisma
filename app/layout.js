@@ -14,7 +14,7 @@ export default function RootLayout({ children }) {
   return (
     <SessionProviders>
       <EdgeStoreProvider>
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
           <body className={inter.className}>{children}</body>
         </html>
       </EdgeStoreProvider>

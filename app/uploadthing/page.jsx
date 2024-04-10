@@ -1,4 +1,5 @@
 "use client";
+
 // import * as React from "react";
 // import { useEdgeStore } from "../utils/edgestore";
 // import { SingleImageDropzone } from "../components/SingleImageDropzone";
@@ -38,40 +39,44 @@
 //     </div>
 //   );
 // }
-import React, { useState, useMemo } from "react";
+import { useOptimistic, useState, useRef } from "react";
+import { deliverMessage } from "./actions.js";
+import { m } from "framer-motion";
 
-const ExpensiveCalculationComponent = () => {
-  // State to hold input value
-  const [inputValue, setInputValue] = useState("");
+export default function App() {
+  const formRef = useRef();
+  const [messages, setMessages] = useState([{ text: "Hello there!" }]);
 
-  // Function to perform expensive calculation
-  const performExpensiveCalculation = (value) => {
-    // Simulating an expensive calculation
-    console.log("Performing expensive calculation...");
-    return value.toUpperCase();
-  };
+  const [optimisticMessages, addOptimisticMessage] = useOptimistic(messages);
 
-  // Memoized result of the expensive calculation
-  const memoizedResult = useMemo(() => {
-    return performExpensiveCalculation(inputValue);
-  }, [inputValue]);
+  async function sendMessage(formData) {
+    const sentMessage = await deliverMessage(formData.get("message"));
+    setMessages((messages) => [...messages, { text: sentMessage }]);
+  }
 
-  // Handler for input change
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
+  async function formAction(formData) {
+    addOptimisticMessage((prev) => [
+      ...prev,
+      { text: formData.get("message"), sending: true },
+    ]);
+    formRef.current.reset();
+    await sendMessage(formData);
+  }
 
   return (
-    <div>
-      <input
-        type="text"
-        value={inputValue}
-        onChange={handleInputChange}
-        placeholder="Type something..."
-      />
-      <p>Memoized Result: {memoizedResult}</p>
-    </div>
+    <>
+      {optimisticMessages.map((message, index) => (
+        <div
+          key={index}
+          className={message.sending ? "opacity-50" : "opacity-100"}
+        >
+          {message.text}
+        </div>
+      ))}
+      <form action={formAction} ref={formRef}>
+        <input type="text" name="message" placeholder="Hello!" />
+        <button type="submit">Send</button>
+      </form>
+    </>
   );
-};
-
-export default ExpensiveCalculationComponent;
+}
